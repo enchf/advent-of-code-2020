@@ -1,4 +1,4 @@
-import java.io.File
+import utils.fileLines
 
 /**
  * --- Day 1: Report Repair ---
@@ -46,13 +46,12 @@ import java.io.File
  * In your expense report, what is the product of the three entries that sum to 2020?
  */
 
-fun readInts(filename: String) = File(filename).readLines().map(String::toInt)
 fun pairSumK(list: List<Int>, k: Int = 2020) = mutableSetOf<Int>().let { seen -> list.find { seen.add(it); seen.contains(k - it) } }
 fun tripletSumKMinusN(list: List<Int>, n: Int, k: Int = 2020) = pairSumK(list, k - n)?.let { Pair(it, n) }
 fun tripletSumK(list: List<Int>, k: Int = 2020) = list.withIndex().map { tripletSumKMinusN(list.drop(it.index + 1), it.value) }.first { it != null }
 
 fun main() {
-    val inputs = listOf("src/01_ReportRepair.txt", "src/01_Sample.txt").map(::readInts)
+    val inputs = fileLines("src/01_ReportRepair.txt", "src/01_Sample.txt") { it.toInt() }
 
     // Part 1.
     inputs.map { pairSumK(it)!! }.forEach { println("Numbers: ($it, ${2020 - it}), multiplied: ${(2020 - it) * it}") }
