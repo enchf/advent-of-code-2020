@@ -113,14 +113,14 @@ val slopesY = listOf<IntFun>(
 )
 
 val allSlopes = slopesX.zip(slopesY)
-val singleSlope = Pair<IntFun, IntFun>({ it + 3 }, { it + 1 })
 
 fun main() = fileLines("src/03_TobogganTrajectory.txt", "src/03_Sample.txt") { TreeLine(it) }
     .forEach { list ->
 
         // Part 1
-        generator(list.size, singleSlope.first, singleSlope.second)
-            .count { (x, y) -> list[y].hasTree(x) }
+        list
+            .withIndex()
+            .count { (i, line) -> line.hasTree(i * 3) }
             .let(::println)
 
         // Part 2
