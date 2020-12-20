@@ -1,8 +1,9 @@
 package utils
 
-fun <T> List<T>.chunkWhen(predicate: (T) -> Boolean): List<List<T>> =
+fun <T> List<T>.chunkWhen(predicate: (T) -> Boolean, removePredicate: Boolean = true): List<List<T>> =
     fold(mutableListOf<MutableList<T>>()) { acc, elem ->
-        if (acc.isEmpty() || predicate.invoke(elem)) acc.add(mutableListOf())
-        acc.last().add(elem)
+        val cut = predicate.invoke(elem)
+        if (acc.isEmpty() || cut) acc.add(mutableListOf())
+        if (!cut || !removePredicate) acc.last().add(elem)
         acc
     }.map { it.toList() }.toList()

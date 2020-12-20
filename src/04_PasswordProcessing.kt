@@ -163,7 +163,6 @@ fun toFields(line: String) = line
     .toMap()
 
 fun toPassport(list: List<String>) = list
-    .filterNot(EMPTY_LINE)
     .fold(mutableMapOf<String, String>()) { acc, line -> acc.putAll(toFields(line)); acc }
     .let { Passport(it) }
 
