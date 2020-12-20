@@ -167,7 +167,7 @@ fun toPassport(list: List<String>) = list
     .fold(mutableMapOf<String, String>()) { acc, line -> acc.putAll(toFields(line)); acc }
     .let { Passport(it) }
 
-fun toPassports(list: List<String>) = chunkWhen(list, EMPTY_LINE)
+fun toPassports(list: List<String>) = list.chunkWhen(EMPTY_LINE)
     .map(::toPassport)
 
 fun main() = fileLines("src/04_PasswordProcessing.txt", "src/04_Sample.txt", "src/04_Sample2.txt") { it }
