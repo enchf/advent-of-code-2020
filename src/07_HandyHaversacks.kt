@@ -47,10 +47,43 @@ import utils.findGroups
  *
  * How many bag colors can eventually contain at least one shiny gold bag?
  * (The list of rules is quite long; make sure you get all of it.)
+ *
+ * --- Part Two ---
+ *
+ * It's getting pretty expensive to fly these days -
+ * not because of ticket prices, but because of the ridiculous number of bags you need to buy!
+ *
+ * Consider again your shiny gold bag and the rules from the above example:
+ *
+ * faded blue bags contain 0 other bags.
+ * dotted black bags contain 0 other bags.
+ * vibrant plum bags contain 11 other bags: 5 faded blue bags and 6 dotted black bags.
+ * dark olive bags contain 7 other bags: 3 faded blue bags and 4 dotted black bags.
+ * So, a single shiny gold bag must contain 1 dark olive bag (and the 7 bags within it)
+ * plus 2 vibrant plum bags (and the 11 bags within each of those): 1 + 1*7 + 2 + 2*11 = 32 bags!
+ *
+ * Of course, the actual rules have a small chance of going several levels deeper than this example;
+ * be sure to count all of the bags, even if the nesting becomes topologically impractical!
+ *
+ * Here's another example:
+ *
+ * shiny gold bags contain 2 dark red bags.
+ * dark red bags contain 2 dark orange bags.
+ * dark orange bags contain 2 dark yellow bags.
+ * dark yellow bags contain 2 dark green bags.
+ * dark green bags contain 2 dark blue bags.
+ * dark blue bags contain 2 dark violet bags.
+ * dark violet bags contain no other bags.
+ *
+ * In this example, a single shiny gold bag must contain 126 other bags.
+ *
+ * How many individual bags are required inside your single shiny gold bag?
+ *
  */
 const val COLOR = "(.+) bags?"
 const val CONTENT = "(no|[0-9]+) $COLOR"
 const val PARSER = "$COLOR contain (.+)\\."
+const val SHINY_GOLD = "shiny gold"
 
 data class Content(val color: String, val amount: Int)
 data class Rule(val color: String, val contents: List<Content>)
@@ -66,5 +99,35 @@ fun String.toRule() = PARSER
         .findGroups(this)
         .let { Rule(it[1], it.last().split(", ").map(String::toContents)) }
 
-fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt") { it.toRule() }
+fun buildGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<String>>()
+        .also {
+            rules.forEach { rule ->
+                it.putIfAbsent(rule.color, mutableSetOf())
+                rule.contents.forEach { row ->
+                    it.putIfAbsent(row.color, mutableSetOf())
+                    it[row.color]!!.add(rule.color)
+                }
+            }
+        }
+
+fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
+    val parents = mutableSetOf<String>()
+    val parentStack = java.util.Stack<String>()
+    val graph = buildGraph(rules)
+
+    parentStack.addAll(graph[color]!!)
+
+    while (parentStack.isNotEmpty()) {
+        val current = parentStack.pop()!!
+        if (!parents.contains(current)) {
+            parentStack.addAll(graph[current]!!)
+            parents.add(current)
+        }
+    }
+
+    return parents
+}
+
+fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt", "src/07_Sample2.txt") { it.toRule() }
+        .onEach { allParents(it).size.let(::println) }
         .forEach(::println)
