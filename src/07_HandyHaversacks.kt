@@ -99,7 +99,7 @@ fun String.toRule() = PARSER
         .findGroups(this)
         .let { Rule(it[1], it.last().split(", ").map(String::toContents)) }
 
-fun buildGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<String>>()
+fun buildParentsGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<String>>()
         .also {
             rules.forEach { rule ->
                 it.putIfAbsent(rule.color, mutableSetOf())
@@ -113,7 +113,7 @@ fun buildGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<String>>()
 fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     val parents = mutableSetOf<String>()
     val parentStack = java.util.Stack<String>()
-    val graph = buildGraph(rules)
+    val graph = buildParentsGraph(rules)
 
     parentStack.addAll(graph[color]!!)
 
@@ -128,6 +128,18 @@ fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     return parents
 }
 
+fun bagSize(rules: List<Rule>) = buildParentsGraph(rules).let { graph ->
+    val finals = rules.filter { it.contents.first().amount == 0 }.map { it.color }
+    val stack = java.util.Stack<String>()
+    val sizes = mutableMapOf<String, Int>().also { finals.forEach { final -> it[final] = 1 } }
+
+    stack.addAll(finals)
+
+    while (stack.isNotEmpty()) {
+        
+    }
+}
+
 fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt", "src/07_Sample2.txt") { it.toRule() }
-        .onEach { allParents(it).size.let(::println) }
-        .forEach(::println)
+        .onEach { allParents(it).size.let(::println) } // Part 1
+        .forEach { bagSize(it).let(::println) } // Part 2
