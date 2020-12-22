@@ -89,6 +89,7 @@ data class Content(val color: String, val amount: Int)
 data class Rule(val color: String, val contents: List<Content>)
 
 fun toSize(size: String) = if (size == "no") 0 else size.toInt()
+fun <T> graph() = mutableMapOf<String, MutableSet<T>>()
 
 fun String.toContents() = CONTENT
         .findGroups(this)
@@ -99,9 +100,9 @@ fun String.toRule() = PARSER
         .findGroups(this)
         .let { Rule(it[1], it.last().split(", ").map(String::toContents)) }
 
-fun buildParentsGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<String>>()
+fun List<Rule>.buildParentsGraph() = graph<String>()
         .also {
-            rules.forEach { rule ->
+            forEach { rule ->
                 it.putIfAbsent(rule.color, mutableSetOf())
                 rule.contents.forEach { row ->
                     it.putIfAbsent(row.color, mutableSetOf())
@@ -110,10 +111,12 @@ fun buildParentsGraph(rules: List<Rule>) = mutableMapOf<String, MutableSet<Strin
             }
         }
 
+fun List<Rule>.weightedChidrenGraph() = graph<Pair<Int, String>>()
+
 fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     val parents = mutableSetOf<String>()
     val parentStack = java.util.Stack<String>()
-    val graph = buildParentsGraph(rules)
+    val graph = rules.buildParentsGraph()
 
     parentStack.addAll(graph[color]!!)
 
@@ -128,17 +131,7 @@ fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     return parents
 }
 
-fun bagSize(rules: List<Rule>) = buildParentsGraph(rules).let { graph ->
-    val finals = rules.filter { it.contents.first().amount == 0 }.map { it.color }
-    val stack = java.util.Stack<String>()
-    val sizes = mutableMapOf<String, Int>().also { finals.forEach { final -> it[final] = 1 } }
-
-    stack.addAll(finals)
-
-    while (stack.isNotEmpty()) {
-        
-    }
-}
+fun bagSize(rules: List<Rule>) = rules.weightedChidrenGraph()
 
 fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt", "src/07_Sample2.txt") { it.toRule() }
         .onEach { allParents(it).size.let(::println) } // Part 1
