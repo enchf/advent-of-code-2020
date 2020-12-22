@@ -81,20 +81,12 @@ fun CodeLine.run(acc: Int, line: Int) =
         }
 
 fun String.toCode() = split(" ").let { (ins, num) -> CodeLine(ins, num.toInt()) }
-fun BootCode.findLoop(): Int {
-    var accumulator = 0
-    var currentLine = 0
-    val visited = Array(size) { false }
-
-    while (!visited[currentLine]) {
-        visited[currentLine] = true
-        get(currentLine)
-                .run(accumulator, currentLine)
-                .also { (newAcc, newLine) -> accumulator = newAcc; currentLine = newLine }
-    }
-
-    return accumulator
-}
+fun BootCode.findLoop(acc: Int = 0, line: Int = 0, visited: Array<Boolean> = Array(size) { false }): Int =
+        if (visited[line]) acc
+        else get(line).run(acc, line).let { (newAcc, newLine) ->
+            visited[line] = true
+            findLoop(newAcc, newLine, visited)
+        }
 
 fun main() = fileLines("src/08_HandheldHalting.txt", "src/08_Sample.txt") { it.toCode() }
         .map { it.findLoop() }
