@@ -48,7 +48,7 @@ import utils.fileLines
 
 fun pairSumK(list: List<Int>, k: Int = 2020) = mutableSetOf<Int>().let { seen -> list.find { seen.add(it); seen.contains(k - it) } }
 fun tripletSumKMinusN(list: List<Int>, n: Int, k: Int = 2020) = pairSumK(list, k - n)?.let { Pair(it, n) }
-fun tripletSumK(list: List<Int>, k: Int = 2020) = list.withIndex().map { tripletSumKMinusN(list.drop(it.index + 1), it.value) }.first { it != null }
+fun tripletSumK(list: List<Int>, k: Int = 2020) = list.withIndex().map { tripletSumKMinusN(list.drop(it.index + 1), it.value, k) }.first { it != null }
 
 fun main() {
     val inputs = fileLines("src/01_ReportRepair.txt", "src/01_Sample.txt") { it.toInt() }
