@@ -83,6 +83,7 @@ import utils.findGroups
 const val COLOR = "(.+) bags?"
 const val CONTENT = "(no|[0-9]+) $COLOR"
 const val PARSER = "$COLOR contain (.+)\\."
+
 const val SHINY_GOLD = "shiny gold"
 
 data class Content(val color: String, val amount: Int)
@@ -99,23 +100,31 @@ fun String.toContents() = CONTENT
 
 fun String.toRule() = PARSER
         .findGroups(this)
-        .let { Rule(it[1], it.last().split(", ").map(String::toContents)) }
+        .let {
+            Rule(
+                it[1],
+                it.last()
+                  .split(", ")
+                  .map(String::toContents)
+                  .filter { content -> content.color != "other" }
+            )
+        }
 
 fun <T> List<Rule>.toGraph(assigner: (Graph<T>, Rule, Content) -> Unit): Graph<T> = graph<T>()
         .also {
             forEach { rule ->
                 it.putIfAbsent(rule.color, mutableSetOf())
-                rule.contents.forEach { edge -> assigner(it, rule, edge) }
+                rule.contents.forEach { edge ->
+                    it.putIfAbsent(edge.color, mutableSetOf())
+                    assigner(it, rule, edge)
+                }
             }
         }
 
 fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     val parents = mutableSetOf<String>()
     val parentStack = java.util.Stack<String>()
-    val graph = rules.toGraph<String> { graph, rule, edge ->
-        graph.putIfAbsent(edge.color, mutableSetOf())
-        graph[edge.color]!!.add(rule.color)
-    }
+    val graph = rules.toGraph<String> { graph, rule, edge -> graph[edge.color]!!.add(rule.color) }
 
     parentStack.addAll(graph[color]!!)
 
@@ -130,7 +139,16 @@ fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     return parents
 }
 
+fun costOf(graph: Graph<Pair<Int, String>>, vertex: String, memo: MutableMap<String, Int>): Int =
+        graph[vertex]!!
+                .also { println("Vertex: $vertex Edge $it Memo $memo") }
+                .map { it.first + (it.first * costOf(graph, it.second, memo)) }
+                .sum()
+                .also { memo[vertex] = it }
+
 fun bagSize(rules: List<Rule>, color: String = SHINY_GOLD) = rules
+        .toGraph<Pair<Int, String>> { graph, rule, edge -> graph[rule.color]!!.add(Pair(edge.amount, edge.color)) }
+        .let { costOf(it, color, mutableMapOf()) }
 
 fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt", "src/07_Sample2.txt") { it.toRule() }
         .onEach { allParents(it).size.let(::println) } // Part 1
