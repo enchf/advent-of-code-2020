@@ -87,6 +87,7 @@ const val SHINY_GOLD = "shiny gold"
 
 data class Content(val color: String, val amount: Int)
 data class Rule(val color: String, val contents: List<Content>)
+typealias Graph<T> = MutableMap<String, MutableSet<T>>
 
 fun toSize(size: String) = if (size == "no") 0 else size.toInt()
 fun <T> graph() = mutableMapOf<String, MutableSet<T>>()
@@ -100,23 +101,21 @@ fun String.toRule() = PARSER
         .findGroups(this)
         .let { Rule(it[1], it.last().split(", ").map(String::toContents)) }
 
-fun List<Rule>.buildParentsGraph() = graph<String>()
+fun <T> List<Rule>.toGraph(assigner: (Graph<T>, Rule, Content) -> Unit): Graph<T> = graph<T>()
         .also {
             forEach { rule ->
                 it.putIfAbsent(rule.color, mutableSetOf())
-                rule.contents.forEach { row ->
-                    it.putIfAbsent(row.color, mutableSetOf())
-                    it[row.color]!!.add(rule.color)
-                }
+                rule.contents.forEach { edge -> assigner(it, rule, edge) }
             }
         }
-
-fun List<Rule>.weightedChidrenGraph() = graph<Pair<Int, String>>()
 
 fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     val parents = mutableSetOf<String>()
     val parentStack = java.util.Stack<String>()
-    val graph = rules.buildParentsGraph()
+    val graph = rules.toGraph<String> { graph, rule, edge ->
+        graph.putIfAbsent(edge.color, mutableSetOf())
+        graph[edge.color]!!.add(rule.color)
+    }
 
     parentStack.addAll(graph[color]!!)
 
@@ -131,7 +130,7 @@ fun allParents(rules: List<Rule>, color: String = SHINY_GOLD): Set<String> {
     return parents
 }
 
-fun bagSize(rules: List<Rule>) = rules.weightedChidrenGraph()
+fun bagSize(rules: List<Rule>, color: String = SHINY_GOLD) = rules
 
 fun main() = fileLines("src/07_HandyHaversacks.txt", "src/07_Sample.txt", "src/07_Sample2.txt") { it.toRule() }
         .onEach { allParents(it).size.let(::println) } // Part 1
