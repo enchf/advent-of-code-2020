@@ -68,7 +68,63 @@ import java.lang.RuntimeException
  *
  * Run your copy of the boot code.
  * Immediately before any instruction is executed a second time, what value is in the accumulator?
+ *
+ * --- Part Two ---
+ *
+ * After some careful analysis, you believe that exactly one instruction is corrupted.
+ *
+ * Somewhere in the program, either a jmp is supposed to be a nop, or a nop is supposed to be a jmp.
+ * (No acc instructions were harmed in the corruption of this boot code.)
+ *
+ * The program is supposed to terminate by attempting to execute an instruction immediately after
+ * the last instruction in the file. By changing exactly one jmp or nop,
+ * you can repair the boot code and make it terminate correctly.
+ *
+ * For example, consider the same program from above:
+ *
+ * nop +0
+ * acc +1
+ * jmp +4
+ * acc +3
+ * jmp -3
+ * acc -99
+ * acc +1
+ * jmp -4
+ * acc +6
+ *
+ * If you change the first instruction from nop +0 to jmp +0,
+ * it would create a single-instruction infinite loop, never leaving that instruction.
+ * If you change almost any of the jmp instructions, the program will still eventually
+ * find another jmp instruction and loop forever.
+ *
+ * However, if you change the second-to-last instruction (from jmp -4 to nop -4),
+ * the program terminates! The instructions are visited in this order:
+ *
+ * nop +0  | 1
+ * acc +1  | 2
+ * jmp +4  | 3
+ * acc +3  |
+ * jmp -3  |
+ * acc -99 |
+ * acc +1  | 4
+ * nop -4  | 5
+ * acc +6  | 6
+ *
+ * After the last instruction (acc +6), the program terminates by attempting to run the instruction
+ * below the last instruction in the file. With this change, after the program terminates,
+ * the accumulator contains the value 8 (acc +1, acc +1, acc +6).
+ *
+ * Fix the program so that it terminates normally by changing exactly one jmp (to nop) or nop (to jmp).
+ * What is the value of the accumulator after the program terminates.
  */
+data class Control(val size: Int, val value: Int = 0, val line: Int = 0) {
+    var visited: Array<Boolean> = Array(size) { false }
+}
+
+fun Control.beenHere() = visited[line]
+fun Control.visit(visitedLine: Int = line) { visited[visitedLine] = true }
+fun Control.generate(newValue: Int, newLine: Int) = Control(size, newValue, newLine).also { it.visited = visited }
+
 data class CodeLine(val ins: String, val value: Int)
 typealias BootCode = List<CodeLine>
 
@@ -81,13 +137,17 @@ fun CodeLine.run(acc: Int, line: Int) =
         }
 
 fun String.toCode() = split(" ").let { (ins, num) -> CodeLine(ins, num.toInt()) }
-fun BootCode.findLoop(acc: Int = 0, line: Int = 0, visited: Array<Boolean> = Array(size) { false }): Int =
-        if (visited[line]) acc
-        else get(line).run(acc, line).let { (newAcc, newLine) ->
-            visited[line] = true
-            findLoop(newAcc, newLine, visited)
+fun BootCode.findLoop(control: Control = Control(size)): Int =
+        if (control.beenHere()) control.value
+        else get(control.line).run(control.value, control.line).let { (newAcc, newLine) ->
+            control.visit()
+            findLoop(control.generate(newAcc, newLine))
         }
 
+fun BootCode.tryTerminate(control: Control = Control(size)): Int? = 1
+
+fun BootCode.fixCode() = 1
+
 fun main() = fileLines("src/08_HandheldHalting.txt", "src/08_Sample.txt") { it.toCode() }
-        .map { it.findLoop() }
-        .forEach(::println)
+        .onEach { it.findLoop().let(::println) } // Part 1
+        .forEach { it.fixCode().let(::println) } // Part 2
