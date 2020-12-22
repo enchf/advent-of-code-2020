@@ -1,4 +1,5 @@
 import utils.fileLines
+import java.lang.IllegalStateException
 import java.lang.RuntimeException
 
 /**
@@ -133,20 +134,38 @@ fun CodeLine.run(acc: Int, line: Int) =
             "nop" -> Pair(acc, line + 1)
             "jmp" -> Pair(acc, line + value)
             "acc" -> Pair(acc + value, line + 1)
-            else -> throw RuntimeException()
+            else -> throw IllegalStateException()
         }
+
+fun CodeLine.switch() =
+    when (ins) {
+        "nop" -> "jmp"
+        "jmp" -> "nop"
+        "acc" -> "acc"
+        else -> throw IllegalStateException()
+    }.let { CodeLine(it, value) }
 
 fun String.toCode() = split(" ").let { (ins, num) -> CodeLine(ins, num.toInt()) }
 fun BootCode.findLoop(control: Control = Control(size)): Int =
         if (control.beenHere()) control.value
-        else get(control.line).run(control.value, control.line).let { (newAcc, newLine) ->
-            control.visit()
-            findLoop(control.generate(newAcc, newLine))
-        }
+        else execute(control) { findLoop(it) }
 
-fun BootCode.tryTerminate(control: Control = Control(size)): Int? = 1
+fun <T> BootCode.execute(control: Control, supplier: (Control) -> T) = get(control.line)
+    .run(control.value, control.line)
+    .let { (newAcc, newLine) ->
+        control.visit()
+        supplier(control.generate(newAcc, newLine))
+    }
 
-fun BootCode.fixCode() = 1
+fun BootCode.tryTerminate(control: Control = Control(size)): Int? =
+        if (control.line == size) control.value
+        else if (control.beenHere() || control.line > size || control.line < 0) null
+        else execute(control) { tryTerminate(it) }
+
+fun BootCode.fixCode() = withIndex()
+    .filterNot { it.value.ins == "acc" }
+    .mapNotNull { this.toMutableList().also { list -> list[it.index] = it.value.switch() }.tryTerminate() }
+    .first()
 
 fun main() = fileLines("src/08_HandheldHalting.txt", "src/08_Sample.txt") { it.toCode() }
         .onEach { it.findLoop().let(::println) } // Part 1
