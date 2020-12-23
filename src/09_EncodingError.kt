@@ -1,4 +1,5 @@
 import utils.fileLines
+import java.util.*
 
 /**
  * --- Day 9: Encoding Error ---
@@ -110,8 +111,22 @@ fun findRuleBreak(list: List<Long>, size: Int) = (size..list.size).find {
     hasPair(list.slice((it - size) until it), list[it]).not()
 }!!.let { list[it] }
 
+fun findSegmentThatSumTarget(list: List<Long>, target: Long) = LinkedList<Long>().also { queue ->
+    run loop@{
+        list.forEach {
+            while (queue.isNotEmpty() && queue.sum() + it > target) queue.poll()
+            queue.offer(it)
+
+            if (queue.size > 1 && queue.sum() == target) return@loop
+        }
+    }
+}.toList()
 
 fun main() = fileLines("src/09_EncodingError.txt", "src/09_Sample_with_5.txt") { it.toLong() }
     .zip(listOf(25, 5))
-    .map { (list, size) -> findRuleBreak(list, size) }
-    .forEach(::println)
+    .map { (list, size) -> Pair(list, findRuleBreak(list, size)) }
+    .onEach { println(it.second) } // Part 1
+    .map { (list, target) ->
+        findSegmentThatSumTarget(list, target)
+            .let { "Segment that adds $target has min: ${it.min()} and max: ${it.max()} = ${it.min()!! + it.max()!!}" }
+    }.forEach(::println) // Part 2
