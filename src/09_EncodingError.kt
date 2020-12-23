@@ -63,6 +63,19 @@ import utils.fileLines
  * (after the preamble) which is not the sum of two of the 25 numbers before it.
  * What is the first number that does not have this property?
  */
+fun hasPair(list: List<Long>, num: Long) = mutableSetOf<Long>().let { set ->
+    list.find {
+        set.add(it)
+        set.contains(num - it)
+    } != null
+}
+
+fun findRuleBreak(list: List<Long>, size: Int) = (size..list.size).find {
+    hasPair(list.slice((it - size) until it), list[it]).not()
+}!!.let { list[it] }
+
+
 fun main() = fileLines("src/09_EncodingError.txt", "src/09_Sample_with_5.txt") { it.toLong() }
     .zip(listOf(25, 5))
+    .map { (list, size) -> findRuleBreak(list, size) }
     .forEach(::println)
