@@ -1,3 +1,5 @@
+import utils.fileLines
+
 /**
  * --- Day 10: Adapter Array ---
  *
@@ -108,4 +110,7 @@
  *
  * What is the number of 1-jolt differences multiplied by the number of 3-jolt differences?
  */
-fun main() = Unit
+fun main() = fileLines("src/10_AdapterArray.txt", "src/10_Sample.txt", "src/10_Sample2.txt") { it.toInt() }
+    .map { it.plus(0).sorted().let { list -> list.plus(list.last() + 3) } }
+    .map { it.zipWithNext().groupBy { (a, b) -> b - a }.map { (_, list) -> list.size }.reduce(Int::times) } // Part 1
+    .forEach(::println)
