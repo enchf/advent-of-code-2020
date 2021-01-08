@@ -1,5 +1,6 @@
 import utils.fileLines
 import java.math.BigDecimal
+import java.util.*
 
 /**
  * --- Day 10: Adapter Array ---
@@ -163,9 +164,42 @@ import java.math.BigDecimal
  *
  * What is the total number of distinct ways you can arrange the adapters to connect the charging outlet to your device?
  */
-fun List<Int>.backTrackPossibilities(): BigDecimal = BigDecimal(size)
+fun List<Int>.outEdgesOf(index: Int) = (index + 1 until index + 4).filter { it < size && get(it) <= get(index) + 3 }.map(::get)
 
-fun main() = fileLines("src/10_AdapterArray.txt", "src/10_Sample.txt", "src/10_Sample2.txt") { it.toInt() }
+fun List<Int>.buildSuccessors() = withIndex()
+    .map { (i, num) -> Pair(num, outEdgesOf(i)) }
+    .toMap()
+
+fun List<Int>.distinctArrangementsRedundant(): BigDecimal {
+    val successors = buildSuccessors()
+    val final = last()
+    val stack = Stack<Int>().also { it.push(0) }
+    var count = BigDecimal.ZERO
+
+    while (stack.isNotEmpty()) {
+        stack.pop()!!.also {
+            if (it == final) count = count.add(BigDecimal.ONE)
+            else stack.addAll(successors[it] ?: error("Number not found"))
+        }
+    }
+
+    return count
+}
+
+fun List<Int>.distinctArrangements(): BigDecimal {
+    val successors = buildSuccessors()
+    val last = last()
+    val arrangements = mutableMapOf<Int, BigDecimal>().also { it[last] = BigDecimal.ONE }
+
+    return dropLast(1)
+        .foldRight(BigDecimal.ONE) { num, _ ->
+            successors[num]
+                ?.fold(BigDecimal.ZERO) { sum, suc -> arrangements[suc]!! + sum }.also { arrangements[num] = it!! }
+                ?: error("Number not found")
+    }
+}
+
+fun main() = fileLines("src/10_Sample.txt", "src/10_Sample2.txt", "src/10_AdapterArray.txt") { it.toInt() }
     .map { it.plus(0).sorted().let { list -> list.plus(list.last() + 3) } } // Sorted list plus 0 and device.
     .onEach { it.zipWithNext().groupBy { (a, b) -> b - a }.map { (_, list) -> list.size }.reduce(Int::times).let(::println) } // Part 1
-    .forEach { it.backTrackPossibilities().let(::println) } // Part 2
+    .forEach { it.distinctArrangements().let(::println) } // Part 2
