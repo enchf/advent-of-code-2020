@@ -1,3 +1,6 @@
+import complexity.GameOfLife
+import complexity.neighbours
+import complexity.stabilize
 import utils.fileLines
 
 /**
@@ -103,5 +106,23 @@ import utils.fileLines
  * Simulate your seating area by applying the seating rules repeatedly until no seats change state.
  * How many seats end up occupied?
  */
+fun GameOfLife<String>.occupiedSeats(x: Int, y: Int) = neighbours(x, y).count { it == "#" }
+fun GameOfLife<String>.occupiedSeats() = matrix.map { it.count { it == "#" } }.sum()
+
+/**
+ * If a seat is empty (L) and there are no occupied seats adjacent to it, the seat becomes occupied.
+ * If a seat is occupied (#) and four or more seats adjacent to it are also occupied, the seat becomes empty.
+ * Otherwise, the seat's state does not change.
+ * Floor (.) never changes; seats don't move, and nobody sits on the floor.
+ */
+fun seatRules(game: GameOfLife<String>, seat: String, x: Int, y: Int) = game.occupiedSeats(x, y).let {
+    if (seat == ".") "."
+    else if (seat == "L" && it == 0) "#"
+    else if (seat == "#" && it >= 4) "L"
+    else seat
+}
+
 fun main() = fileLines("src/11_Sample.txt", "src/11_SeatingSystem.txt") { it }
+    .map { GameOfLife(it.map { row -> row.split("") }, ::seatRules) }
+    .map { it.stabilize().occupiedSeats() }
     .forEach(::println)
